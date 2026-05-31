@@ -1,29 +1,27 @@
 "use client";
 
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect, useRef, useCallback, useState } from "react";
 import { useChat } from "ai/react";
 import { nanoid } from "nanoid";
 import { detectCrisis } from "@/lib/crisis";
 import { getCrisisShownKey, appendMessage } from "@/lib/mock-messages";
 import { useChatStore } from "@/stores/chatStore";
 import { useUserStore } from "@/stores/userStore";
+import type { TarotCard } from "@/lib/tarot";
 import GreetingCard from "./GreetingCard";
 import MessageBubble from "./MessageBubble";
 import MessageInput from "./MessageInput";
+import TarotDraw from "./TarotDraw";
 import CrisisAlert from "@/components/crisis/CrisisAlert";
 
 interface ChatWindowProps {
   userId: string;
 }
 
-// Greeting message injected if user has no messages today
-function buildGreetingMessage(nickname: string) {
-  return `${nickname}，ไหวไหมวันนี้ บอกเล่าให้ฟังนะ`;
-}
-
 export default function ChatWindow({ userId }: ChatWindowProps) {
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const [tarotOpen, setTarotOpen] = useState(false);
 
   const {
     messages: storedMessages,
@@ -43,26 +41,21 @@ export default function ChatWindow({ userId }: ChatWindowProps) {
     initGreetingState,
   } = useUserStore();
 
-  // Load today's messages on mount
   useEffect(() => {
     loadMessages(userId);
     initGreetingState();
   }, [userId, loadMessages, initGreetingState]);
 
-  // Show greeting card if no messages today (mock: treat empty messages as unread greeting)
   const showGreeting = !todayGreetingRead;
 
-  // Scroll to bottom whenever messages change
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [storedMessages]);
 
-  // Vercel AI SDK useChat
   const { messages: streamMessages, append, isLoading: aiLoading } = useChat({
     api: "/api/chat",
     body: { userName: nickname ?? "คุณ" },
     onFinish: (message) => {
-      // Persist AI response
       const msg = {
         id: nanoid(),
         role: "assistant" as const,
@@ -86,7 +79,6 @@ export default function ChatWindow({ userId }: ChatWindowProps) {
     (content: string) => {
       if (!content.trim() || aiLoading) return;
 
-      // Crisis detection (local, sync)
       const isCrisis = detectCrisis(content);
       if (isCrisis) {
         const alreadyShown =
@@ -100,7 +92,6 @@ export default function ChatWindow({ userId }: ChatWindowProps) {
         }
       }
 
-      // Persist user message
       const userMsg = {
         id: nanoid(),
         role: "user" as const,
@@ -120,18 +111,25 @@ export default function ChatWindow({ userId }: ChatWindowProps) {
     [aiLoading, append, addMessage, userId, showCrisisAlert, setLoading]
   );
 
-  function handleGreetingRespond() {
-    markGreetingRead();
-    setTimeout(() => inputRef.current?.focus(), 100);
-  }
+  // When user confirms a tarot card, insert it as a system bubble + trigger AI response
+  const handleTarotResult = useCallback(
+    (card: TarotCard) => {
+      const cardMsg = {
+        id: nanoid(),
+        role: "system" as const,
+        content: `✦ ไพ่วันนี้: ${card.nameTh}\n${card.message}`,
+        conversationDate: new Date().toLocaleDateString("en-CA", {
+          timeZone: "Asia/Bangkok",
+        }),
+        isCrisisDetected: false,
+        createdAt: new Date(),
+      };
+      addMessage(cardMsg);
+      appendMessage(userId, cardMsg);
+    },
+    [addMessage, userId]
+  );
 
-  function handleGreetingDismiss() {
-    markGreetingRead();
-  }
-
-  // Merge stored messages with any streaming AI content
-  // streamMessages has the live stream; storedMessages has persisted history.
-  // For display: show storedMessages + streaming bubble if AI is responding.
   const streamingContent =
     aiLoading && streamMessages.length > 0
       ? streamMessages[streamMessages.length - 1]?.role === "assistant"
@@ -139,11 +137,8 @@ export default function ChatWindow({ userId }: ChatWindowProps) {
         : null
       : null;
 
-  // Build display list: storedMessages, but exclude the last AI message if we're streaming it
-  // to avoid duplication when onFinish fires.
   const displayMessages = aiLoading
     ? storedMessages.filter((_, i) => {
-        // While streaming, don't show the last stored assistant msg if we have a stream
         if (
           streamingContent &&
           i === storedMessages.length - 1 &&
@@ -154,8 +149,7 @@ export default function ChatWindow({ userId }: ChatWindowProps) {
       })
     : storedMessages;
 
-  const emptyState =
-    storedMessages.length === 0 && !showGreeting;
+  const emptyState = storedMessages.length === 0 && !showGreeting;
 
   return (
     <div
@@ -166,15 +160,23 @@ export default function ChatWindow({ userId }: ChatWindowProps) {
       {showGreeting && (
         <GreetingCard
           userName={nickname ?? "คุณ"}
-          onRespond={handleGreetingRespond}
-          onDismiss={handleGreetingDismiss}
+          onRespond={() => { markGreetingRead(); setTimeout(() => inputRef.current?.focus(), 100); }}
+          onDismiss={() => markGreetingRead()}
+        />
+      )}
+
+      {/* Tarot overlay */}
+      {tarotOpen && (
+        <TarotDraw
+          onClose={() => setTarotOpen(false)}
+          onResult={handleTarotResult}
         />
       )}
 
       {/* Message list */}
       <div
-        className="flex-1 overflow-y-auto px-4 pb-4"
-        style={{ paddingBottom: "100px", paddingTop: "var(--space-6)" }}
+        className="flex-1 overflow-y-auto px-4"
+        style={{ paddingBottom: "110px", paddingTop: "var(--space-6)" }}
       >
         {emptyState && (
           <p
@@ -205,7 +207,6 @@ export default function ChatWindow({ userId }: ChatWindowProps) {
           );
         })}
 
-        {/* Streaming bubble */}
         {aiLoading && streamingContent !== null && (
           <MessageBubble
             key="streaming"
@@ -219,7 +220,6 @@ export default function ChatWindow({ userId }: ChatWindowProps) {
           />
         )}
 
-        {/* CrisisAlert inline */}
         {isCrisisAlertVisible && (
           <div className="flex justify-start mt-2">
             <CrisisAlert onClose={hideCrisisAlert} />
@@ -234,6 +234,7 @@ export default function ChatWindow({ userId }: ChatWindowProps) {
         onSend={handleSend}
         disabled={aiLoading || isLoading}
         inputRef={inputRef}
+        onTarot={() => setTarotOpen(true)}
       />
     </div>
   );

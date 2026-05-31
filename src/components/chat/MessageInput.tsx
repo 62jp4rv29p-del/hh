@@ -8,6 +8,7 @@ interface MessageInputProps {
   disabled?: boolean;
   placeholder?: string;
   inputRef?: React.RefObject<HTMLTextAreaElement>;
+  onTarot?: () => void;
 }
 
 const MAX_CHARS = 2000;
@@ -17,12 +18,12 @@ export default function MessageInput({
   disabled = false,
   placeholder = "พิมพ์ความรู้สึกของคุณที่นี่...",
   inputRef: externalRef,
+  onTarot,
 }: MessageInputProps) {
   const [value, setValue] = useState("");
   const internalRef = useRef<HTMLTextAreaElement>(null);
   const ref = externalRef ?? internalRef;
 
-  // Auto-resize textarea
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
@@ -62,6 +63,30 @@ export default function MessageInput({
           padding: "var(--space-4) var(--space-4) var(--space-6)",
         }}
       >
+        {/* Tarot button row */}
+        {onTarot && (
+          <div className="mb-2">
+            <button
+              onClick={onTarot}
+              disabled={disabled}
+              className="font-thai flex items-center gap-1 transition-opacity hover:opacity-80"
+              style={{
+                background: "transparent",
+                border: "1px solid var(--color-border)",
+                borderRadius: "var(--radius-full)",
+                padding: "4px 12px",
+                fontSize: "13px",
+                color: "var(--color-text-secondary)",
+                cursor: disabled ? "not-allowed" : "pointer",
+                opacity: disabled ? 0.4 : 1,
+              }}
+            >
+              <span style={{ fontSize: "14px" }}>✦</span>
+              ดูดวงวันนี้
+            </button>
+          </div>
+        )}
+
         <div className="flex items-end gap-3">
           <textarea
             ref={ref}
