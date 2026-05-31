@@ -1,0 +1,220 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+
+  /* 背景层次 */
+  --color-bg-base:        #0D1521;
+  --color-bg-surface:     #131E2E;
+  --color-bg-elevated:    #1A2740;
+  --color-bg-overlay:     #243352;
+
+  /* 文字层次 */
+  --color-text-primary:   #E8EEF7;
+  --color-text-secondary: #8DA0BC;
+  --color-text-muted:     #4D6080;
+
+  /* 气泡色 */
+  --color-bubble-ai:      #1C2E45;
+  --color-bubble-user:    #1E3A5F;
+
+  /* 唯一暖色 */
+  --color-warm:           #C97B2E;
+  --color-warm-subtle:    #2A1F0E;
+  --color-warm-text:      #F5C982;
+
+  /* 边框 */
+  --color-border:         #1F3050;
+  --color-border-subtle:  #162540;
+
+  /* 危机 */
+  --color-crisis-bg:      #1E1628;
+  --color-crisis-border:  #3D2855;
+  --color-crisis-text:    #C4A8E0;
+
+  /* 状态 */
+  --color-error-text:     #E8A87C;
+  --color-success-text:   #7DB8A0;
+  --color-cursor:         #C97B2E;
+
+  /* 间距 */
+  --space-1:  4px;
+  --space-2:  8px;
+  --space-3:  12px;
+  --space-4:  16px;
+  --space-5:  20px;
+  --space-6:  24px;
+  --space-8:  32px;
+  --space-10: 40px;
+  --space-12: 48px;
+
+  /* 圆角 */
+  --radius-sm:   8px;
+  --radius-md:   12px;
+  --radius-lg:   16px;
+  --radius-xl:   20px;
+  --radius-full: 9999px;
+
+  /* 动效 */
+  --duration-fast:   150ms;
+  --duration-base:   250ms;
+  --duration-slow:   400ms;
+  --duration-gentle: 600ms;
+  --easing-default: cubic-bezier(0.4, 0, 0.2, 1);
+  --easing-out:     cubic-bezier(0.0, 0, 0.2, 1);
+}
+
+/* 强制暗色模式，不随系统切换 */
+@media (prefers-color-scheme: light) {
+  :root {
+    --color-bg-base:        #0D1521;
+    --color-bg-surface:     #131E2E;
+    --color-bg-elevated:    #1A2740;
+    --color-bg-overlay:     #243352;
+    --color-text-primary:   #E8EEF7;
+    --color-text-secondary: #8DA0BC;
+    --color-text-muted:     #4D6080;
+    --color-bubble-ai:      #1C2E45;
+    --color-bubble-user:    #1E3A5F;
+    --color-warm:           #C97B2E;
+    --color-warm-subtle:    #2A1F0E;
+    --color-warm-text:      #F5C982;
+    --color-border:         #1F3050;
+    --color-border-subtle:  #162540;
+    --color-crisis-bg:      #1E1628;
+    --color-crisis-border:  #3D2855;
+    --color-crisis-text:    #C4A8E0;
+    --color-error-text:     #E8A87C;
+    --color-success-text:   #7DB8A0;
+    --color-cursor:         #C97B2E;
+  }
+}
+
+html,
+body {
+  background-color: var(--color-bg-base);
+  color: var(--color-text-primary);
+  font-family: var(--font-noto-thai), sans-serif;
+  font-size: 18px;
+  line-height: 1.8;
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  overflow: hidden;
+}
+
+/* ── Keyframes ─────────────────────────────────────────── */
+
+@keyframes messageIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes greetingIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes greetingOut {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+
+@keyframes cursorBlink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0; }
+}
+
+@keyframes crisisIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes shimmer {
+  from { background-position: -200% 0; }
+  to   { background-position:  200% 0; }
+}
+
+/* ── Utility classes ───────────────────────────────────── */
+
+.message-bubble-enter {
+  animation: messageIn var(--duration-base) var(--easing-out) forwards;
+}
+
+.greeting-card-enter {
+  animation: greetingIn var(--duration-gentle) var(--easing-out) forwards;
+}
+
+.greeting-card-exit {
+  animation: greetingOut var(--duration-base) var(--easing-default) forwards;
+}
+
+.crisis-alert-enter {
+  animation: crisisIn var(--duration-slow) var(--easing-out) forwards;
+}
+
+.typing-cursor::after {
+  content: '|';
+  color: var(--color-cursor);
+  animation: cursorBlink 1s step-end infinite;
+  margin-left: 1px;
+}
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--color-bg-surface) 25%,
+    var(--color-bg-elevated) 50%,
+    var(--color-bg-surface) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: var(--radius-lg);
+}
+
+/* ── shadcn/ui overrides ───────────────────────────────── */
+
+input[type="text"],
+input[type="email"],
+input[type="password"] {
+  background: var(--color-bg-elevated) !important;
+  border-color: var(--color-border) !important;
+  color: var(--color-text-primary) !important;
+  font-size: 18px;
+  line-height: 1.8;
+}
+
+textarea {
+  background: var(--color-bg-elevated) !important;
+  border-color: var(--color-border) !important;
+  color: var(--color-text-primary) !important;
+  font-size: 16px;
+  resize: none;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--color-text-muted) !important;
+}
+
+input:focus,
+textarea:focus {
+  border-color: rgba(201, 123, 46, 0.6) !important;
+  box-shadow: 0 0 0 1px rgba(201, 123, 46, 0.2) !important;
+  outline: none !important;
+}
+
+/* scrollbar */
+::-webkit-scrollbar {
+  width: 4px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 2px;
+}
